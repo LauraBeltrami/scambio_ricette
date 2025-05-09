@@ -209,13 +209,12 @@ function App() {
   >
     Accedi con Google
   </button>
-
-  <Link
-    to="/registrazione"
-    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300"
-  >
-  Registrati con email
-  </Link>
+ {/*registrazione tramite mail*/} 
+  <Link to="/registrazione">
+  <button className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700">
+    Registrati con Email
+  </button>
+</Link>
 </div>
       )}
     </div>
