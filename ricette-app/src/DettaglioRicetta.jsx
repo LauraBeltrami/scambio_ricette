@@ -40,12 +40,17 @@ function DettaglioRicetta() {
 
         <p className="text-gray-700 mt-2">{ricetta.descrizione}</p>
 
-        {ricetta.passaggi && ricetta.passaggi.trim() !== "" && (
+        {ricetta.passaggi && (
   <div className="mt-4">
     <h2 className="text-xl font-semibold mb-2 text-orange-600">📝 Passaggi:</h2>
-    <p className="text-gray-800 whitespace-pre-line">{ricetta.passaggi}</p>
+    <ul className="list-decimal list-inside space-y-1 text-gray-800">
+      {ricetta.passaggi.split("\n") .filter((p) => p.trim() !== "").map((step, index) => (
+        <li key={index}>{step}</li>
+      ))}
+    </ul>
   </div>
 )}
+
 
         <small className="text-gray-500 block mt-4">👩‍🍳 {ricetta.autore || "Anonimo"}</small>
         <p className="text-sm text-gray-500 mt-1">❤️ {ricetta.likes || 0} Mi piace</p>

@@ -202,12 +202,21 @@ function App() {
           </div>
         </>
       ) : (
-        <button
-          onClick={loginConGoogle}
-          className="px-4 py-2 bg-blue-600 text-white rounded-xl"
-        >
-          Accedi con Google
-        </button>
+       <div className="flex flex-col items-center gap-4">
+  <button
+    onClick={loginConGoogle}
+    className="px-4 py-2 bg-blue-600 text-white rounded-xl"
+  >
+    Accedi con Google
+  </button>
+
+  <Link
+    to="/registrazione"
+    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300"
+  >
+  Registrati con email
+  </Link>
+</div>
       )}
     </div>
   );
