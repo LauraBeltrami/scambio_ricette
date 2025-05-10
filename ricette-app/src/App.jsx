@@ -217,6 +217,11 @@ function App() {
 </Link>
 </div>
       )}
+      <Link to="/login">
+  <button className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-xl">
+    Accedi con Email
+  </button>
+</Link>
     </div>
   );
 }

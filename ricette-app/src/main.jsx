@@ -5,6 +5,7 @@ import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RecipeDetails from "./RecipeDetails";
 import Registrazione from "./Registrazione"; 
+import Login from "./Login";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -13,6 +14,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/" element={<App />} />
         <Route path="/ricetta/:id" element={<RecipeDetails />} />
         <Route path="/registrazione" element={<Registrazione />} /> 
+        <Route path="/login" element={<Login />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
