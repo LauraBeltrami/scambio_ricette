@@ -1,38 +1,29 @@
-/* App.css */
+/* Tailwind CSS Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* Custom CSS */
 .gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
 }
 
 .card {
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  overflow: hidden;
-  text-align: center;
-  transition: transform 0.2s ease;
+  @apply bg-white rounded-xl shadow-md overflow-hidden text-center transition-transform duration-200 ease-in-out;
 }
 
 .card img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
+  @apply w-full h-44 object-cover;
 }
 
 .card h3 {
-  font-size: 1.1rem;
-  margin-top: 0.5rem;
-  color: #333;
+  @apply text-lg mt-2 text-gray-800;
 }
 
 .card small {
-  font-size: 0.8rem;
-  color: gray;
+  @apply text-sm text-gray-500;
 }
 
 .like {
-  color: crimson;
-  cursor: pointer;
+  @apply text-red-600 cursor-pointer;
 }
