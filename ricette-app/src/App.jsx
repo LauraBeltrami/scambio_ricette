@@ -18,12 +18,11 @@ function App() {
   const [utente, setUtente] = useState(null);
   const [titolo, setTitolo] = useState("");
   const [descrizione, setDescrizione] = useState("");
-  const [passaggi, setPassaggi] = useState(""); // 👈 aggiunto campo passaggi
+  const [passaggi, setPassaggi] = useState("");
   const [immagine, setImmagine] = useState(null);
   const [anteprima, setAnteprima] = useState(null);
   const [ricette, setRicette] = useState([]);
 
-  // 🔐 Mantiene il login anche dopo refresh
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (utenteLoggato) => {
       if (utenteLoggato) setUtente(utenteLoggato);
@@ -31,7 +30,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // 🔐 Login con Google
   const loginConGoogle = () => {
     signInWithPopup(auth, provider)
       .then((res) => setUtente(res.user))
@@ -42,7 +40,6 @@ function App() {
     signOut(auth).then(() => setUtente(null));
   };
 
-  // 📸 Carica immagine
   const caricaImmagine = (e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -53,7 +50,6 @@ function App() {
     if (file) reader.readAsDataURL(file);
   };
 
-  // 📤 Invia ricetta
   const inviaRicetta = async (e) => {
     e.preventDefault();
     if (!titolo || !descrizione) return alert("Compila tutti i campi!");
@@ -62,7 +58,7 @@ function App() {
       await addDoc(collection(db, "ricette"), {
         titolo,
         descrizione,
-        passaggi, 
+        passaggi,
         immagine,
         autore: utente.displayName,
         uid: utente.uid,
@@ -90,7 +86,6 @@ function App() {
     }
   };
 
-  // 🔁 Carica ricette in tempo reale
   useEffect(() => {
     const q = query(collection(db, "ricette"), orderBy("data", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -104,124 +99,122 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen p-6 bg-yellow-50 flex flex-col items-center">
-      <h1 className="text-4xl font-bold text-orange-600 mb-4">🍝 Scambio Ricette</h1>
+    <div className="min-h-screen bg-yellow-50 flex flex-col items-center">
+      <header className="w-full bg-white shadow-md p-4 flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-orange-600">🍝 Scambio Ricette</h1>
+        {utente && (
+          <div className="flex items-center gap-4">
+            <span className="text-gray-800">👋 {utente.displayName}</span>
+            <button
+              onClick={esci}
+              className="px-4 py-2 bg-red-500 text-white rounded-xl"
+            >
+              Esci
+            </button>
+          </div>
+        )}
+      </header>
 
-      {utente ? (
-        <>
-          <p className="mb-2">👋 Benvenuto, {utente.displayName}</p>
-          <button
-            onClick={esci}
-            className="mb-6 px-4 py-2 bg-red-500 text-white rounded-xl"
-          >
-            Esci
-          </button>
-
-          {/* 📥 FORM INSERIMENTO */}
-          <form
-            onSubmit={inviaRicetta}
-            className="bg-white p-4 rounded-xl shadow-md w-full max-w-md flex flex-col gap-4"
-          >
-            <input
-              type="text"
-              placeholder="Titolo ricetta"
-              value={titolo}
-              onChange={(e) => setTitolo(e.target.value)}
-              className="border p-2 rounded"
-              required
-            />
-
-            <input
-              type="file"
-              accept="image/*"
-              onChange={caricaImmagine}
-              className="border p-2 rounded"
-            />
-
-            {anteprima && (
-              <div className="w-full h-40 overflow-hidden rounded">
+      <main className="container mx-auto p-6 w-full max-w-5xl">
+        {utente ? (
+          <>
+            <form
+              onSubmit={inviaRicetta}
+              className="bg-white p-6 rounded-xl shadow-md flex flex-col gap-4 mb-8"
+            >
+              <h2 className="text-xl font-semibold">➕ Nuova ricetta</h2>
+              <input
+                type="text"
+                placeholder="Titolo ricetta"
+                value={titolo}
+                onChange={(e) => setTitolo(e.target.value)}
+                className="border p-2 rounded"
+                required
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={caricaImmagine}
+                className="border p-2 rounded"
+              />
+              {anteprima && (
                 <img
                   src={anteprima}
                   alt="Anteprima"
-                  className="w-full h-full object-cover"
+                  className="w-full max-h-60 object-cover rounded"
                 />
-              </div>
-            )}
-
-            <textarea
-              placeholder="Descrizione della ricetta..."
-              value={descrizione}
-              onChange={(e) => setDescrizione(e.target.value)}
-              className="border p-2 rounded resize-none"
-              required
-            />
-
-            <textarea
-              placeholder="Passaggi dettagliati (usa invio per andare a capo)"
-              value={passaggi}
-              onChange={(e) => setPassaggi(e.target.value)}
-              className="border p-2 rounded resize-none"
-              rows={4}
-            />
-
-            <button
-              type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded-xl"
-            >
-              Salva ricetta
-            </button>
-          </form>
-
-          {/* 📋 LISTA RICETTE */}
-          <h2 className="text-2xl mt-8 font-bold">🍽️ Le ricette:</h2>
-          <div className="gallery">
-            {ricette.map((r) => (
-              <Link
-                to={`/ricetta/${r.id}`}
-                key={r.id}
-                className="card hover:shadow-lg transition"
+              )}
+              <textarea
+                placeholder="Descrizione della ricetta..."
+                value={descrizione}
+                onChange={(e) => setDescrizione(e.target.value)}
+                className="border p-2 rounded resize-none"
+                required
+              />
+              <textarea
+                placeholder="Passaggi dettagliati"
+                value={passaggi}
+                onChange={(e) => setPassaggi(e.target.value)}
+                className="border p-2 rounded resize-none"
+                rows={4}
+              />
+              <button
+                type="submit"
+                className="bg-green-600 text-white px-4 py-2 rounded-xl"
               >
-                {r.immagine && (
-                  <div className="w-full aspect-square overflow-hidden">
+                Salva ricetta
+              </button>
+            </form>
+
+            <h2 className="text-2xl font-bold mb-4">🍽️ Le ricette</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {ricette.map((r) => (
+                <Link
+                  to={`/ricetta/${r.id}`}
+                  key={r.id}
+                  className="card bg-white p-4 rounded-xl shadow hover:shadow-lg transition"
+                >
+                  {r.immagine && (
                     <img
                       src={r.immagine}
                       alt={r.titolo}
-                      className="w-full h-full object-cover"
+                      className="w-full h-40 object-cover rounded"
                     />
-                  </div>
-                )}
-                <div className="p-2 flex flex-col">
-                  <h3 className="text-md font-semibold truncate">{r.titolo}</h3>
+                  )}
+                  <h3 className="text-lg font-semibold mt-2">{r.titolo}</h3>
                   <p className="text-sm text-gray-600 line-clamp-2">{r.descrizione}</p>
-                  <span className="text-pink-600 text-sm mt-1 text-left">
+                  <span className="text-pink-600 text-sm mt-1">
                     ❤️ {r.likes || 0} Mi piace
                   </span>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-4 mt-10">
+            <button
+              onClick={loginConGoogle}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl"
+            >
+              Accedi con Google
+            </button>
+            <Link to="/registrazione">
+              <button className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700">
+                Registrati con Email
+              </button>
+            </Link>
+            <Link to="/login">
+              <button className="px-4 py-2 bg-purple-600 text-white rounded-xl">
+                Accedi con Email
+              </button>
+            </Link>
           </div>
-        </>
-      ) : (
-       <div className="flex flex-col items-center gap-4">
-  <button
-    onClick={loginConGoogle}
-    className="px-4 py-2 bg-blue-600 text-white rounded-xl"
-  >
-    Accedi con Google
-  </button>
- {/*registrazione tramite mail*/} 
-  <Link to="/registrazione">
-  <button className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700">
-    Registrati con Email
-  </button>
-</Link>
-</div>
-      )}
-      <Link to="/login">
-  <button className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-xl">
-    Accedi con Email
-  </button>
-</Link>
+        )}
+      </main>
+
+      <footer className="mt-auto bg-white w-full py-4 text-center text-sm text-gray-500 border-t">
+        © 2025 Scambio Ricette. Creato con ❤️ da Letizia.
+      </footer>
     </div>
   );
 }
