@@ -14,24 +14,24 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
-
 function App() {
-  const [utente, setUtente] = useState(null);
-  const [titolo, setTitolo] = useState("");
-  const [descrizione, setDescrizione] = useState("");
-  const [passaggi, setPassaggi] = useState("");
+  const [utente, setUtente] = useState(null); //utente loggato
+  const [titolo, setTitolo] = useState("");// titolo della ricetta
+  const [descrizione, setDescrizione] = useState("");//Descrizione
+  const [passaggi, setPassaggi] = useState("");//passaggi
   const [immagine, setImmagine] = useState(null);
   const [anteprima, setAnteprima] = useState(null);
   const [ricette, setRicette] = useState([]);
   const [ricercaIngrediente, setRicercaIngrediente] = useState("");
 
+  //Quando l'app si carica, controlla se c'è già un utente autenticato
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (utenteLoggato) => {
       if (utenteLoggato) setUtente(utenteLoggato);
     });
     return () => unsubscribe();
   }, []);
-
+//apre il riquadro con l'accesso a google
   const loginConGoogle = () => {
     signInWithPopup(auth, provider)
       .then((res) => setUtente(res.user))
@@ -41,7 +41,7 @@ function App() {
   const esci = () => {
     signOut(auth).then(() => setUtente(null));
   };
-
+//Legge l'immagine come base64 per poterla salvare e mostrare in anteprima.
   const caricaImmagine = (e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -51,17 +51,16 @@ function App() {
     };
     if (file) reader.readAsDataURL(file);
   };
-
+//invia la ricetta al database in + pulito controlla la presenza di html malevolo
+  //e la presenza di campi vuoti
   const inviaRicetta = async (e) => {
     e.preventDefault();
     if (!titolo || !descrizione) return alert("Compila tutti i campi!");
 
-    // Valutazione base
     if (/<|>|script/.test(titolo + descrizione + passaggi)) {
       return alert("⚠️ Il testo non può contenere tag HTML o script.");
     }
 
-    // Sanificazione
     const titoloPulito = DOMPurify.sanitize(titolo);
     const descrizionePulita = DOMPurify.sanitize(descrizione);
     const passaggiPuliti = DOMPurify.sanitize(passaggi);
@@ -89,6 +88,7 @@ function App() {
     }
   };
 
+  //incrementa il numero di like in firestore
   const mettiLike = async (id, currentLikes) => {
     try {
       const docRef = doc(db, "ricette", id);
@@ -98,6 +98,7 @@ function App() {
     }
   };
 
+  //Legge in tempo reale tutte le ricette dal database, ordinate dalla più recente.
   useEffect(() => {
     const q = query(collection(db, "ricette"), orderBy("data", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
