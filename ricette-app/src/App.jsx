@@ -1,4 +1,5 @@
 import "./App.css";
+import DOMPurify from 'dompurify';
 import { useState, useEffect } from "react";
 import { auth, provider, db } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
@@ -22,6 +23,7 @@ function App() {
   const [immagine, setImmagine] = useState(null);
   const [anteprima, setAnteprima] = useState(null);
   const [ricette, setRicette] = useState([]);
+  const [ricercaIngrediente, setRicercaIngrediente] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (utenteLoggato) => {
@@ -54,11 +56,21 @@ function App() {
     e.preventDefault();
     if (!titolo || !descrizione) return alert("Compila tutti i campi!");
 
+    // Valutazione base
+    if (/<|>|script/.test(titolo + descrizione + passaggi)) {
+      return alert("⚠️ Il testo non può contenere tag HTML o script.");
+    }
+
+    // Sanificazione
+    const titoloPulito = DOMPurify.sanitize(titolo);
+    const descrizionePulita = DOMPurify.sanitize(descrizione);
+    const passaggiPuliti = DOMPurify.sanitize(passaggi);
+
     try {
       await addDoc(collection(db, "ricette"), {
-        titolo,
-        descrizione,
-        passaggi,
+        titolo: titoloPulito,
+        descrizione: descrizionePulita,
+        passaggi: passaggiPuliti,
         immagine,
         autore: utente.displayName,
         uid: utente.uid,
@@ -167,27 +179,40 @@ function App() {
             </form>
 
             <h2 className="text-2xl font-bold mb-4">🍽️ Le ricette</h2>
+
+            <input
+              type="text"
+              placeholder="Cerca per ingrediente..."
+              value={ricercaIngrediente}
+              onChange={(e) => setRicercaIngrediente(e.target.value.toLowerCase())}
+              className="mb-4 p-2 border rounded w-full"
+            />
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {ricette.map((r) => (
-                <Link
-                  to={`/ricetta/${r.id}`}
-                  key={r.id}
-                  className="card bg-white p-4 rounded-xl shadow hover:shadow-lg transition"
-                >
-                  {r.immagine && (
-                    <img
-                      src={r.immagine}
-                      alt={r.titolo}
-                      className="w-full h-40 object-cover rounded"
-                    />
-                  )}
-                  <h3 className="text-lg font-semibold mt-2">{r.titolo}</h3>
-                  <p className="text-sm text-gray-600 line-clamp-2">{r.descrizione}</p>
-                  <span className="text-pink-600 text-sm mt-1">
-                    ❤️ {r.likes || 0} Mi piace
-                  </span>
-                </Link>
-              ))}
+              {ricette
+                .filter((r) =>
+                  r.descrizione?.toLowerCase().includes(ricercaIngrediente)
+                )
+                .map((r) => (
+                  <Link
+                    to={`/ricetta/${r.id}`}
+                    key={r.id}
+                    className="card bg-white p-4 rounded-xl shadow hover:shadow-lg transition"
+                  >
+                    {r.immagine && (
+                      <img
+                        src={r.immagine}
+                        alt={r.titolo}
+                        className="w-full h-40 object-cover rounded"
+                      />
+                    )}
+                    <h3 className="text-lg font-semibold mt-2">{r.titolo}</h3>
+                    <p className="text-sm text-gray-600 line-clamp-2">{r.descrizione}</p>
+                    <span className="text-pink-600 text-sm mt-1">
+                      ❤️ {r.likes || 0} Mi piace
+                    </span>
+                  </Link>
+                ))}
             </div>
           </>
         ) : (
