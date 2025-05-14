@@ -1,6 +1,6 @@
 import "./App.css";
 import DOMPurify from 'dompurify';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auth, provider, db } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { Link } from "react-router-dom";
@@ -15,7 +15,7 @@ import {
   doc,
 } from "firebase/firestore";
 
-// Sidebar integrata come componente interno
+// Sidebar per profilo e ricette personali
 function Sidebar({ utente, ricetteUtente }) {
   return (
     <aside className="w-64 bg-white p-4 rounded-xl shadow-md h-fit sticky top-6 self-start">
@@ -57,6 +57,8 @@ function App() {
   const [anteprima, setAnteprima] = useState(null);
   const [ricette, setRicette] = useState([]);
   const [ricercaIngrediente, setRicercaIngrediente] = useState("");
+
+  const descrizioneRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (utenteLoggato) => {
@@ -144,6 +146,17 @@ function App() {
     ? ricette.filter((r) => r.uid === utente.uid)
     : [];
 
+  const autoResizeTextarea = (el) => {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  };
+
+  useEffect(() => {
+    if (descrizioneRef.current) {
+      autoResizeTextarea(descrizioneRef.current);
+    }
+  }, [descrizione]);
+
   return (
     <div className="min-h-screen bg-yellow-50 flex flex-col items-center">
       <header className="w-full bg-white shadow-md p-4 flex justify-between items-center">
@@ -195,8 +208,12 @@ function App() {
                 <textarea
                   placeholder="Ingredienti"
                   value={descrizione}
-                  onChange={(e) => setDescrizione(e.target.value)}
-                  className="border p-2 rounded resize-none"
+                  ref={descrizioneRef}
+                  onChange={(e) => {
+                    setDescrizione(e.target.value);
+                    autoResizeTextarea(e.target);
+                  }}
+                  className="border p-2 rounded resize-none overflow-hidden"
                   required
                 />
                 <textarea
