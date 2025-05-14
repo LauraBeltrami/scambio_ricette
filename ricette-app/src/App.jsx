@@ -14,24 +14,24 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
+
 function App() {
-  const [utente, setUtente] = useState(null); //utente loggato
-  const [titolo, setTitolo] = useState("");// titolo della ricetta
-  const [descrizione, setDescrizione] = useState("");//Descrizione
-  const [passaggi, setPassaggi] = useState("");//passaggi
+  const [utente, setUtente] = useState(null);
+  const [titolo, setTitolo] = useState("");
+  const [descrizione, setDescrizione] = useState("");
+  const [passaggi, setPassaggi] = useState("");
   const [immagine, setImmagine] = useState(null);
   const [anteprima, setAnteprima] = useState(null);
   const [ricette, setRicette] = useState([]);
   const [ricercaIngrediente, setRicercaIngrediente] = useState("");
 
-  //Quando l'app si carica, controlla se c'è già un utente autenticato
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (utenteLoggato) => {
       if (utenteLoggato) setUtente(utenteLoggato);
     });
     return () => unsubscribe();
   }, []);
-//apre il riquadro con l'accesso a google
+
   const loginConGoogle = () => {
     signInWithPopup(auth, provider)
       .then((res) => setUtente(res.user))
@@ -41,7 +41,7 @@ function App() {
   const esci = () => {
     signOut(auth).then(() => setUtente(null));
   };
-//Legge l'immagine come base64 per poterla salvare e mostrare in anteprima.
+
   const caricaImmagine = (e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
@@ -51,12 +51,10 @@ function App() {
     };
     if (file) reader.readAsDataURL(file);
   };
-//invia la ricetta al database in + pulito controlla la presenza di html malevolo
-  //e la presenza di campi vuoti
+
   const inviaRicetta = async (e) => {
     e.preventDefault();
     if (!titolo || !descrizione) return alert("Compila tutti i campi!");
-
     if (/<|>|script/.test(titolo + descrizione + passaggi)) {
       return alert("⚠️ Il testo non può contenere tag HTML o script.");
     }
@@ -88,7 +86,6 @@ function App() {
     }
   };
 
-  //incrementa il numero di like in firestore
   const mettiLike = async (id, currentLikes) => {
     try {
       const docRef = doc(db, "ricette", id);
@@ -98,7 +95,6 @@ function App() {
     }
   };
 
-  //Legge in tempo reale tutte le ricette dal database, ordinate dalla più recente.
   useEffect(() => {
     const q = query(collection(db, "ricette"), orderBy("data", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -110,6 +106,10 @@ function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  const ricetteUtente = utente
+    ? ricette.filter((r) => r.uid === utente.uid)
+    : [];
 
   return (
     <div className="min-h-screen bg-yellow-50 flex flex-col items-center">
@@ -128,119 +128,118 @@ function App() {
         )}
       </header>
 
-      <main className="container mx-auto p-6 w-full max-w-5xl">
+      <main className="container mx-auto p-6 w-full max-w-7xl flex gap-6">
         {utente ? (
           <>
-            <form
-              onSubmit={inviaRicetta}
-              className="bg-white p-6 rounded-xl shadow-md flex flex-col gap-4 mb-8"
-            >
-              <h2 className="text-xl font-semibold">➕ Nuova ricetta</h2>
+            <div className="w-full lg:w-3/4">
+              <form
+                onSubmit={inviaRicetta}
+                className="bg-white p-6 rounded-xl shadow-md flex flex-col gap-4 mb-8"
+              >
+                <h2 className="text-xl font-semibold">➕ Nuova ricetta</h2>
+                <input
+                  type="text"
+                  placeholder="Titolo ricetta"
+                  value={titolo}
+                  onChange={(e) => setTitolo(e.target.value)}
+                  className="border p-2 rounded"
+                  required
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={caricaImmagine}
+                  className="border p-2 rounded"
+                />
+                {anteprima && (
+                  <img
+                    src={anteprima}
+                    alt="Anteprima"
+                    className="w-full max-h-60 object-cover rounded"
+                  />
+                )}
+                <textarea
+                  placeholder="Descrizione della ricetta..."
+                  value={descrizione}
+                  onChange={(e) => setDescrizione(e.target.value)}
+                  className="border p-2 rounded resize-none"
+                  required
+                />
+                <textarea
+                  placeholder="Passaggi dettagliati"
+                  value={passaggi}
+                  onChange={(e) => setPassaggi(e.target.value)}
+                  className="border p-2 rounded resize-none"
+                  rows={4}
+                />
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded-xl"
+                >
+                  Salva ricetta
+                </button>
+              </form>
+
+              <h2 className="text-2xl font-bold mb-4">🍽️ Le ricette</h2>
+
               <input
                 type="text"
-                placeholder="Titolo ricetta"
-                value={titolo}
-                onChange={(e) => setTitolo(e.target.value)}
-                className="border p-2 rounded"
-                required
+                placeholder="Cerca per ingrediente..."
+                value={ricercaIngrediente}
+                onChange={(e) =>
+                  setRicercaIngrediente(e.target.value.toLowerCase())
+                }
+                className="mb-4 p-2 border rounded w-full"
               />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={caricaImmagine}
-                className="border p-2 rounded"
-              />
-              {anteprima && (
-                <img
-                  src={anteprima}
-                  alt="Anteprima"
-                  className="w-full max-h-60 object-cover rounded"
-                />
-              )}
-              <textarea
-                placeholder="Descrizione della ricetta..."
-                value={descrizione}
-                onChange={(e) => setDescrizione(e.target.value)}
-                className="border p-2 rounded resize-none"
-                required
-              />
-              <textarea
-                placeholder="Passaggi dettagliati"
-                value={passaggi}
-                onChange={(e) => setPassaggi(e.target.value)}
-                className="border p-2 rounded resize-none"
-                rows={4}
-              />
-              <button
-                type="submit"
-                className="bg-green-600 text-white px-4 py-2 rounded-xl"
-              >
-                Salva ricetta
-              </button>
-            </form>
 
-            <h2 className="text-2xl font-bold mb-4">🍽️ Le ricette</h2>
-
-            <input
-              type="text"
-              placeholder="Cerca per ingrediente..."
-              value={ricercaIngrediente}
-              onChange={(e) => setRicercaIngrediente(e.target.value.toLowerCase())}
-              className="mb-4 p-2 border rounded w-full"
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {ricette
-                .filter((r) =>
-                  r.descrizione?.toLowerCase().includes(ricercaIngrediente)
-                )
-                .map((r) => (
-                  <Link
-                    to={`/ricetta/${r.id}`}
-                    key={r.id}
-                    className="card bg-white p-4 rounded-xl shadow hover:shadow-lg transition"
-                  >
-                    {r.immagine && (
-                      <img
-                        src={r.immagine}
-                        alt={r.titolo}
-                        className="w-full h-40 object-cover rounded"
-                      />
-                    )}
-                    <h3 className="text-lg font-semibold mt-2">{r.titolo}</h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">{r.descrizione}</p>
-                    <span className="text-pink-600 text-sm mt-1">
-                      ❤️ {r.likes || 0} Mi piace
-                    </span>
-                  </Link>
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                {ricette
+                  .filter((r) =>
+                    r.descrizione?.toLowerCase().includes(ricercaIngrediente)
+                  )
+                  .map((r) => (
+                    <Link
+                      to={`/ricetta/${r.id}`}
+                      key={r.id}
+                      className="card bg-white p-4 rounded-xl shadow hover:shadow-lg transition"
+                    >
+                      {r.immagine && (
+                        <img
+                          src={r.immagine}
+                          alt={r.titolo}
+                          className="w-full h-40 object-cover rounded"
+                        />
+                      )}
+                      <h3 className="text-lg font-semibold mt-2">{r.titolo}</h3>
+                      <p className="text-sm text-gray-700 mb-2">
+                        {r.descrizione.slice(0, 100)}...
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          mettiLike(r.id, r.likes);
+                        }}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        ❤️ {r.likes} like
+                      </button>
+                    </Link>
+                  ))}
+              </div>
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center gap-4 mt-10">
+          <div className="text-center w-full mt-10">
+            <p className="mb-4 text-lg">Accedi per iniziare a condividere le tue ricette!</p>
             <button
               onClick={loginConGoogle}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl"
+              className="bg-blue-500 text-white px-6 py-2 rounded-xl"
             >
               Accedi con Google
             </button>
-            <Link to="/registrazione">
-              <button className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700">
-                Registrati con Email
-              </button>
-            </Link>
-            <Link to="/login">
-              <button className="px-4 py-2 bg-purple-600 text-white rounded-xl">
-                Accedi con Email
-              </button>
-            </Link>
           </div>
         )}
       </main>
-
-      <footer className="mt-auto bg-white w-full py-4 text-center text-sm text-gray-500 border-t">
-        © 2025 Scambio Ricette. Creato con ❤️ da Letizia.
-      </footer>
     </div>
   );
 }
