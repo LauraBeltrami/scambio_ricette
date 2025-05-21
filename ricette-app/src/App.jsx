@@ -1,8 +1,18 @@
 import "./App.css";
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 import { useState, useEffect, useRef } from "react";
-import { auth, provider, db } from "./firebase";
-import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import {
+  auth,
+  provider,
+  db
+} from "./firebase";
+import {
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from "firebase/auth";
 import { Link } from "react-router-dom";
 import {
   collection,
@@ -12,29 +22,25 @@ import {
   query,
   orderBy,
   updateDoc,
-  doc,
+  doc
 } from "firebase/firestore";
 
-// Sidebar per profilo e ricette personali
+// Component Sidebar
 function Sidebar({ utente, ricetteUtente }) {
   return (
     <aside className="w-64 bg-white p-4 rounded-xl shadow-md h-fit sticky top-6 self-start">
       <div className="mb-6">
         <h2 className="text-lg font-bold text-orange-600 mb-2">👤 Profilo</h2>
-        <p className="text-sm text-gray-800">{utente.displayName}</p>
+        <p className="text-sm text-gray-800">{utente.displayName || utente.email}</p>
         <p className="text-xs text-gray-500">{utente.email}</p>
       </div>
-
       <div>
         <h2 className="text-lg font-bold text-orange-600 mb-2">📚 Le mie ricette</h2>
         <ul className="space-y-2">
           {ricetteUtente.length > 0 ? (
             ricetteUtente.map((r) => (
               <li key={r.id}>
-                <Link
-                  to={`/ricetta/${r.id}`}
-                  className="text-blue-600 text-sm hover:underline"
-                >
+                <Link to={`/ricetta/${r.id}`} className="text-blue-600 text-sm hover:underline">
                   🍽️ {r.titolo}
                 </Link>
               </li>
@@ -58,6 +64,10 @@ function App() {
   const [ricette, setRicette] = useState([]);
   const [ricercaIngrediente, setRicercaIngrediente] = useState("");
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [modalita, setModalita] = useState("login"); // login o register
+
   const descrizioneRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +85,18 @@ function App() {
 
   const esci = () => {
     signOut(auth).then(() => setUtente(null));
+  };
+
+  const accediConEmail = () => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then((res) => setUtente(res.user))
+      .catch((err) => alert("Errore accesso: " + err.message));
+  };
+
+  const registratiConEmail = () => {
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((res) => setUtente(res.user))
+      .catch((err) => alert("Errore registrazione: " + err.message));
   };
 
   const caricaImmagine = (e) => {
@@ -104,7 +126,7 @@ function App() {
         descrizione: descrizionePulita,
         passaggi: passaggiPuliti,
         immagine,
-        autore: utente.displayName,
+        autore: utente.displayName || utente.email,
         uid: utente.uid,
         data: serverTimestamp(),
         likes: 0,
@@ -163,11 +185,8 @@ function App() {
         <h1 className="text-3xl font-bold text-orange-600">🍝 Scambio Ricette</h1>
         {utente && (
           <div className="flex items-center gap-4">
-            <span className="text-gray-800">👋 {utente.displayName}</span>
-            <button
-              onClick={esci}
-              className="px-4 py-2 bg-red-500 text-white rounded-xl"
-            >
+            <span className="text-gray-800">👋 {utente.displayName || utente.email}</span>
+            <button onClick={esci} className="px-4 py-2 bg-red-500 text-white rounded-xl">
               Esci
             </button>
           </div>
@@ -232,7 +251,6 @@ function App() {
               </form>
 
               <h2 className="text-2xl font-bold mb-4">🍽️ Le ricette</h2>
-
               <input
                 type="text"
                 placeholder="Cerca per ingrediente..."
@@ -242,7 +260,6 @@ function App() {
                 }
                 className="mb-4 p-2 border rounded w-full"
               />
-
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                 {ricette
                   .filter((r) =>
@@ -280,14 +297,45 @@ function App() {
             </div>
           </>
         ) : (
-          <div className="text-center w-full mt-10">
-            <p className="mb-4 text-lg">Accedi per iniziare a condividere le tue ricette!</p>
+          <div className="text-center w-full mt-10 max-w-md mx-auto bg-white p-6 rounded-xl shadow-md">
+            <h2 className="text-xl font-bold mb-4">
+              {modalita === "login" ? "Accedi" : "Registrati"} con email
+            </h2>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mb-2 p-2 border rounded w-full"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mb-4 p-2 border rounded w-full"
+            />
+            <button
+              onClick={modalita === "login" ? accediConEmail : registratiConEmail}
+              className="bg-blue-600 text-white px-6 py-2 rounded-xl w-full mb-2"
+            >
+              {modalita === "login" ? "Accedi" : "Registrati"}
+            </button>
             <button
               onClick={loginConGoogle}
-              className="bg-blue-500 text-white px-6 py-2 rounded-xl"
+              className="bg-red-500 text-white px-6 py-2 rounded-xl w-full"
             >
               Accedi con Google
             </button>
+            <p className="mt-4 text-sm">
+              {modalita === "login" ? "Non hai un account?" : "Hai già un account?"}{" "}
+              <button
+                onClick={() => setModalita(modalita === "login" ? "register" : "login")}
+                className="text-blue-600 underline"
+              >
+                {modalita === "login" ? "Registrati" : "Accedi"}
+              </button>
+            </p>
           </div>
         )}
       </main>
